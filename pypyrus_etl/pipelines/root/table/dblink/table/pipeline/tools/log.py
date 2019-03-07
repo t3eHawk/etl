@@ -1,5 +1,5 @@
-import pypyrus_logbook as logbook
 import sqlalchemy as sql
+import pypyrus_logbook as logbook
 
 class Log():
     """

@@ -4,6 +4,9 @@ import pypyrus_etl as etl
 with open('README.md', 'r') as fh:
     long_description = fh.read()
 
+install_requires = [
+    'pypyrus-logbook>=0.0.2', 'sqlalchemy', 'cx_Oracle', 'paramiko']
+
 author = etl.__author__
 email = etl.__email__
 version = etl.__version__
@@ -20,7 +23,7 @@ setuptools.setup(
     long_description_content_type='text/markdown',
     license=license,
     url='https://github.com/t3eHawk/etl',
-    install_requires=['pypyrus-logbook>=0.0.2'],
+    install_requires=install_requires,
     packages=setuptools.find_packages(),
     classifiers=[
         'Programming Language :: Python :: 3',

@@ -3,7 +3,7 @@ import paramiko
 class Host():
     """That class represents a host object."""
     def __init__(
-        self, name, system=None, ip=None, port=None, user=None, password=None,
+        self, name, system=None, host=None, port=None, user=None, password=None,
         key=None, config=None, ssh=True, sftp=True
     ):
         self.name = name
@@ -14,7 +14,9 @@ class Host():
         if ssh is True:
             self.ssh = paramiko.SSHClient()
             self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            self.ssh.connect(ip, port=port, username=user, password=password)
+            self.ssh.connect(
+                host, port=port, username=user, password=password,
+                key_filename=key)
         else:
             self.ssh = None
 
@@ -22,7 +24,7 @@ class Host():
             if ssh is True:
                 self.sftp = self.ssh.open_sftp()
             elif ssh is False:
-                transport = paramiko.Transport((ip, port))
+                transport = paramiko.Transport((host, port))
                 transport.connect(username=user, password=password)
                 self.sftp = paramiko.SFTPClient.from_transport(transport)
         else:

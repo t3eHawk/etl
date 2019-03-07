@@ -1,80 +1,150 @@
-# Project Requirements and Task List.
+# Project Requirements and Task List
 Here are collected all project requirements.
 
 ## Object - Database
 ### Must Have
-- [x] Provide simple connection to any DB of any vendor.
-- [x] Connect via the set of parameters (username, password, host, port, instance).
-- [x] Connect via the credentials string.
+- [x] Simple connection to any DB of any vendor.
+- [x] Connect via credentials
 - [x] Connect via the configuration INI file.
-- [x] Give common interface to interact with the DB.
-- [x] Give API to create table using arguments with the table name and definition.
-- [x] Read the table definition from Python dict or JSON file.
-- [ ] Configure the tables with the parameters:
-  - [ ] Name.
-  - [x] Compression.
-  - [x] Primary key.
-  - [x] Foreign key.
-  - [ ] Partitions.
-- [ ] Configure the columns with the parameters:
-  - [x] Name.
-  - [x] Data type.
-  - [x] Default value.
-  - [x] Unique.
-  - [x] Not null.
-  - [x] Auto increment.
-  - [x] Primary key.
-  - [x] Foreign key.
-  - [ ] Index.
-
-## Object - LinkLoader
-### Must Have
-- [x] Give access to the DB though the Database object.
-- [x] Reflect the name of the source DB.
-- [x] Reflect the name of the link for source DB.
-- [x] Reflect the name of the loading table.
-- [x] Read the configuration from Python dict or JSON file.
-- [x] Support objects:
-  - [x] Table *DS* - DS_{source DB name}_{table name} - main table with loaded
-  data on target DB.
-  - [x] Table *TEMP* - TEMP_{source DB name}_{table name} - temporary table raw
-  data before it inserted to *DS*.
-  - [x] Table *LOG* - LOG_{source DB name}_{table name} - table with the history
-  of loading procedures reflecting the time, status and other metrics of each
-  load.
-- [ ] Give built-in ETL methods:
-  - [x] Method *extract()* to extract data from original source to *TEMP*.
-  - [ ] Method *transform()* to transform data in *TEMP* before it loaded to *DS*.
-  - [x] Method *load()* to load finally data from *TEMP* to *DS*.
-- [x] Define and update during the ETL procedure *LOG* metrics: load id, load
-status, load start timestamp, load end timestamp, records found, records loaded,
-last status.
-- [ ] Status must reflect last loading condition and can be one of four:
-  * 0 - started.
-  * 1 - exported.
-  * 2 - transformed.
-  * 3 - loaded.
-- [ ] There must be a way to choose between regular insert, full table refresh,
-table merge/update.
-- [x] There must be a way to choose between full table extract or filter it.
-- [ ] Provide special exceptions for error cases.
-
-### Should Have
-- [x] Add basic bind parameters that may be used during ETL.
-- [ ] Add configuration of status.
-- [ ] Provide method or decorator for simple status update in *LOG*.
-- [ ] Provide base classes for extraction, transformation and loading.
-- [ ] Method *transform* should get functions that somehow transform the data.
-- [ ] There should be a way to check loading data on duplicates.
-due to some reason.
+- [x] Method to get the list of DB objects.
+- [x] Interface to interact with the DB and its objects.
 
 ### Could Have
-- [ ] Do not declare *Database* object separately but inside the *LinkLoader*
-by common INI or JSON.
-- [ ] Log Python actions to the file. Nice to have opportunity to choose
-between the own or the existing logger.
-- [ ] Provide the most popular transformation methods.
-- [ ] There could be an error handler for records that was not loaded to *DS*.
+- [x] Specific interface to interact with the DB and its objects.
+
+## Object - Host
+### Must Have
+- [ ] Simple connection to any remote host by FTP.
+- [x] Simple connection to any remote host by SSH.
+- [x] Simple connection to any remote host by SFTP.
+- [x] Connect with SSH/SFTP via the credentials
+- [ ] Connect with SSH/SFTP via the configuration INI file.
+- [ ] Connect with FTP via the credentials.
+- [ ] Connect with FTP via the configuration INI file.
+- [x] Interface to interact with the host by SSH.
+- [x] Interface to interact with the host by SFTP.
+- [ ] Interface to interact with the host by FTP.
+
+### Could Have
+- [x] Specific interface to interact with the remote host.
+
+## Pipeline - One DB Table -> DBLink -> Another DB Table
+### Must Have
+- [x] Database object with interface.
+- [x] Description of DB, table and BDLink.
+- [x] Input table as object with methods.
+- [x] Mediation table as object with methods.
+- [x] Output table as object with methods.
+- [x] File log with process details.
+- [x] DB table log with most significant process details.
+- [x] Logger as object.
+- [x] Configurator as object.
+- [x] Append extracted data to target table.
+- [x] Clear target table from all data.
+- [x] Update target table using extracted data.
+- [x] Upsert/merge target table using extracted data.
+- [x] Extractor as object with only RUN method customized.
+- [x] Transformer as object with only RUN method customized.
+- [x] Loader as object with only RUN method customized.
+- [x] Automatic pipeline objects generation.
+- [x] Read the configuration from Python dict or JSON file.
+- [x] Method EXTRACT.
+- [x] Method TRANSFORM.
+- [x] Method LOAD.
+- [x] Method PREPARE.
+- [x] Method RUN.
+- [x] Customize target table structure and parameters.
+- [x] Customize target columns parameters.
+- [x] Extract data by creation date.
+- [x] Restrict data columns.
+- [x] Filter data.
+- [x] Join data.
+- [x] Pipeline ID.
+- [x] Pipeline run date.
+- [x] Way to define pipeline which loaded certain records.
+- [x] Log ID, start and end times, status.
+- [x] Log count of records extracted and loaded.
+- [x] Alarming.
+
+### Should Have
+- [ ] Variables.
+- [x] Base classes for extractor, transformer and loader that will allow to replace built-in objects.
+- [x] Clean data from full record duplicates.
+- [x] Clean data from primary key duplicates.
+- [x] Allow or disallow duplicates.
+- [x] Error handler for records that was not or should not be loaded.
+- [x] Use existing logger instead of self-generated one.
+- [x] Run pipeline for past periods.
+- [x] Integrate pipeline with job.
+- [x] Log subject who run the pipeline (username or job ID).
+- [x] Log pipeline run date.
+- [x] Log count of error records.
+- [x] Log count of updated records.
+
+### Could Have
+- [ ] Most popular transformations.
+- [x] Put duplicates to error handler (with identity of pipeline).
+- [x] Customize all tables names.
+- [x] Space trim for strings.
+- [ ] Convert to string from other formats.
+- [x] Migrate more data for first pipeline launch.
+- [x] Oracle parallel execution.
+- [x] Oracle compress.
+- [ ] Python multithreading.
 
 ### Won't Have
 - [ ] Resume load from certain stage.
+- [ ] Quick undo of pipeline results.
+- [ ] Table partitions.
+
+## Pipeline - Host Folder -> SFTP -> Host Another Folder/Another Host Folder
+### Must Have
+- [x] Host object with interface.
+- [x] Description of host, folder and data in it.
+- [x] File log with process details.
+- [x] Log as object.
+- [x] Configurator as object.
+- [x] Copy folder files.
+- [ ] Move (cut) folder files.
+- [ ] Check if file is finished.
+- [x] Clear target folder and/or subfolders from all files.
+- [x] Input folder as object with methods.
+- [x] Mediation folder as object with methods.
+- [x] Output folder as object with methods.
+- [x] Extractor as object with only RUN method customized.
+- [x] Transformer as object with only RUN method customized.
+- [x] Loader as object with only RUN method customized.
+- [x] Automatic pipeline objects generation
+- [x] Read the configuration from Python dict or JSON file.
+- [ ] Pipeline ID and run date.
+- [ ] Do not stop if a file processing failed.
+- [ ] Exclude failed file from target folder if necessary.
+- [ ] Log ID, run date.
+- [x] Log files list.
+- [x] Log files checksum.
+- [ ] Log count of files found and loaded.
+- [x] Method EXTRACT.
+- [x] Method TRANSFORM.
+- [x] Method LOAD.
+- [x] Method PREPARE.
+- [x] Method RUN.
+- [x] Alarming.
+
+### Should Have
+- [ ] Table log with most significant process details.
+- [x] Mask of files that must be loaded.
+- [ ] Special logic for subfolders.
+- [ ] Zip data.
+- [ ] Unzip data.
+
+### Could Have
+- [x] Customize folders names.
+- [ ] Customize files names.
+- [ ] Customize subfolders names.
+- [ ] Data archive.
+- [ ] Most popular transformations.
+- [ ] Validate data.
+
+### Won't Have
+- [ ] Resume load from certain stage.
+- [ ] Quick undo of pipeline results.

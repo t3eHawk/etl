@@ -5,6 +5,7 @@ from .nodes.host import Host
 from .nodes.database import Database
 
 from .objects.table import Table
+from .objects.folder import Folder
 
 from .pipelines import Pipeline
 
@@ -19,7 +20,7 @@ __copyright__ = 'Copyright 2019, The Pypyrus ETL Project'
 __credits__ = ['Timur Faradzhov']
 
 __license__ = 'MIT'
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __maintainer__ = 'Timur Faradzhov'
 __email__ = 'timurfaradzhov@gmail.com'
 __status__ = 'Production'
