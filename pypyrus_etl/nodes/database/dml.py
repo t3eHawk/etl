@@ -159,6 +159,10 @@ class update(Executable, ClauseElement):
 class trim(FunctionElement):
     name = 'trim'
 
+def parallel(stmt, dop='auto'):
+    hint = f'/*+ PARALLEL({dop}) */'
+    return stmt.prefix_with(hint, dialect='oracle')
+
 # COMPILATIONS
 
 @compiles(merge)
@@ -190,10 +194,6 @@ def compile(element, compiler, **kwargs):
         keys='\nAND '.join(element.keys),
         columns=', '.join(element.columns),
         prefixes=' '.join(element.prefixes))
-
-def parallel(stmt, dop='auto'):
-    hint = f'/*+ PARALLEL({dop}) */'
-    return stmt.prefix_with(hint, dialect='oracle')
 
 @compiles(trim)
 def compile(element, compiler, **kwargs):

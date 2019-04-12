@@ -14,13 +14,13 @@ class Database():
     ):
         if config is not None and credentials is None:
             config = self.parse_config(config)
-            section = name or 'DEFAULT'
-            vendor = config[section].get('Vendor')
-            host = config[section].get('Host')
-            port = config[section].get('Port')
-            sid = config[section].get('SID')
-            user = config[section].get('User')
-            password = config[section].get('Password')
+            section = name or 'DEFAULT' if user is None else f'{name}:{user}'
+            vendor = config[section].get('vendor')
+            host = config[section].get('host')
+            port = config[section].get('port')
+            sid = config[section].get('sid')
+            user = config[section].get('user')
+            password = config[section].get('password')
 
         if credentials is None:
             credentials = f'{vendor}://{user}:{password}@{host}:{port}/{sid}'
