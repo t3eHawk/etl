@@ -4,11 +4,6 @@ import sqlalchemy as sql
 
 class Operator():
     def __init__(self):
-        self.records_found = None
-        self.records_loaded = None
-        self.records_updated = None
-        self.records_error = None
-
         self._first_ever = False
         self._with_update = False
         self._with_error = False
@@ -125,7 +120,7 @@ class Operator():
     #     pass
 
     def _map_period(self):
-        period = self.config['settings'].get('filter', {}).get('period')
+        period = self.config['meta'].get('filter', {}).get('period')
         now = self.moment
         start = None
         end = None

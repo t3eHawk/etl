@@ -1,3 +1,4 @@
+import os
 import json
 import configparser
 import sqlalchemy as sql
@@ -5,45 +6,99 @@ import sqlalchemy.orm as orm
 
 from .dml import merge
 from .func import trim
+from .utils import parse_config
 from .convs import naming_convention
+from ...share import connections
+from ...config import make_config
+
+userconfig = os.path.abspath(os.path.expanduser('~/.pypyrus/db.json'))
+
+def make_database(name):
+    if connections.get(name) is not None:
+        return connections.get(name)
+    else:
+        config = make_config(obj=userconfig)[name]
+        vendor = config.get('vendor')
+        host = config.get('host')
+        port = config.get('port')
+        sid = config.get('sid')
+        user = config.get('user')
+        password = config.get('password')
+        database = Database(
+            name=name, vendor=vendor, host=host, port=port, sid=sid,
+            user=user, password=password)
+        return database
 
 class Database():
     def __init__(
-        self, name, config=None, vendor=None, credentials=None,
-        host=None, port=None, sid=None, user=None, password=None
+        self, name=None, vendor=None, host=None, port=None, sid=None,
+        user=None, password=None, credentials=None, config=None
     ):
-        if config is not None and credentials is None:
-            config = self.parse_config(config)
-            section = name or 'DEFAULT' if user is None else f'{name}:{user}'
-            vendor = config[section].get('vendor')
-            host = config[section].get('host')
-            port = config[section].get('port')
-            sid = config[section].get('sid')
-            user = config[section].get('user')
-            password = config[section].get('password')
+        self.name = None
+        self.vendor = None
+        self.host = None
+        self.port = None
+        self.sid = None
+        self.user = None
+        self.schema = None
+        self.engine = None
+        self.session = None
+        self.metadata = None
+        self.connection = None
+        self.compargs = None
 
-        if credentials is None:
-            credentials = f'{vendor}://{user}:{password}@{host}:{port}/{sid}'
-        self.engine = sql.create_engine(credentials)
-        self.session = orm.sessionmaker(bind=self.engine)()
-        self.metadata = sql.MetaData(naming_convention=naming_convention)
-        self.connection = self.engine.connect()
-
-
-        self.name = name.lower()
-        self.vendor = vendor.lower()
-        self.schema = user.lower()
-
-        self.compargs = {
-            'bind': self.engine,
-            'compile_kwargs': {
-                'literal_binds': True}}
+        self.configure(
+            name=name, vendor=vendor, host=host, port=port, sid=sid,
+            user=user, password=password, credentials=credentials,
+            config=config)
         pass
 
-    def parse_config(self, path):
-        config = configparser.ConfigParser(allow_no_value=True)
-        config.read(path)
-        return config
+    def configure(
+        self, name=None, vendor=None, host=None, port=None, sid=None,
+        user=None, password=None, config=None, credentials=None
+    ):
+        if config is not None:
+            if isinstance(name, str) is True:
+                config = make_config(obj=config)[name]
+                vendor = config.get('vendor', vendor)
+                host = config.get('host', host)
+                port = config.get('port', port)
+                sid = config.get('sid', sid)
+                user = config.get('user', user)
+                password = config.get('password', password)
+
+        if isinstance(name, str) is True:
+            self.name = name.lower()
+        if isinstance(vendor, str) is True:
+            self.vendor = vendor.lower()
+        if isinstance(host, str) is True:
+            self.host = host
+        if isinstance(port, (int, str)) is True:
+            self.port = port
+        if isinstance(sid, str) is True:
+            self.sid = sid
+        if isinstance(user, str) is True:
+            self.user = self.schema = user.lower()
+
+        if isinstance(credentials, str) is False:
+            login = f'{self.user}:{password}'
+            address = f'{self.host}:{self.port}/{self.sid}'
+            credentials = f'{self.vendor}://{login}@{address}'
+
+        if isinstance(password, str) is True and (
+            host is not None or port is not None or sid is not None \
+            or user is not None
+        ):
+            self.engine = sql.create_engine(credentials)
+            self.session = orm.sessionmaker(bind=self.engine)()
+            self.metadata = sql.MetaData(naming_convention=naming_convention)
+            self.connection = self.engine.connect()
+            # Share connections.
+            connections[self.name] = self
+
+        self.compargs = {
+            'bind': self.engine, 'compile_kwargs': {'literal_binds': True}}
+        pass
 
     def inspect(self, path=None, tech=False):
         """Get the structure of database objects."""
@@ -130,7 +185,3 @@ class Database():
             with open(path, "w") as fp:
                 json.dump(data, fp, indent=2, sort_keys=True)
         return data
-
-    # def inspect_dblink(self):
-    #     inspect = 'SELECT db_link FROM user_db_links'
-    #     pass

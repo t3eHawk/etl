@@ -1,14 +1,14 @@
-from .log import Logger
+from .log import make_log, log_columns
 from .utils import who, when
-from .config import Configurator
+from .config import make_config
 from .items.table import Table
+from .nodes.database import Database
 
 class Pipeline():
     def __new__(self, input, output, *args, **kwargs):
         if isinstance(input, Table) is True:
             if isinstance(output, Table) is True:
-                if id(input.database) == id(output.database):
-                    from .pipelines.table.db.table.pipeline import Pipeline
+                from .pipelines.table.db.table.pipeline import Pipeline
         return Pipeline(input, output, *args, **kwargs)
 
 class Setup():
@@ -47,106 +47,96 @@ class Setup():
         # Identity of job that was used to deploy this pipeline.
         self.job = job
         # Logger used for pipeline.
-        self.log = log or Logger()
+        self.log = make_log(obj=log)
 
         # Process configurator.
-        try:
-            if config is None:
-                self.log.warning('Configurator was not found!')
-                config = {}
-            elif isinstance(config, str) is True:
-                self.log.debug('Configurator is JSON file.')
-                config = Configurator(path=config)
-            elif isinstance(config, dict) is True:
-                self.log.debug('Configurator is dictionary.')
-        except:
-            self.log.critical()
-        else:
-            self.config = config
-            if len(config.keys()) > 0:
-                self.log.debug('Configurator parsed.')
-            else:
-                self.log.warning('Configurator is empty!')
+        self.config = make_config(obj=config)
 
+        self.oper_id = None
+        # Moment for which pipeline initiated.
+        self.moment = moment or when()
+        # Time that reflects data period.
+        self.oper_timestamp = self.moment
         # Who initiated the pipeline.
         self.initiator = initiator or who()
-        # moment for which pipeline initiated.
-        self.moment = moment or when()
         # Time of pipeline execution
         self.start_timestamp = None
         self.end_timestamp = None
         # Count statistics of input and output objects.
         self.input_count = 0
         self.output_count = 0
+        self.update_count = 0
+        self.error_count = 0
         # Pipeline process.
         self.status = None
+
+        # Process table logging configuration.
+        if self.log.table.status is False:
+            if isinstance(self.config.get('logging'), dict) is True:
+                config = self.config.get('logging')
+                if config.get('columns') is None:
+                    config['columns'] = log_columns
+                table = Table(config=config)
+                if table.exists is False:
+                    table.create()
+                else:
+                    table.load()
+                self.log.table.configure(
+                    db=table.db.connection, entity=table.entity)
+                self.log.table.open()
+                self.log.set(
+                    oper_timestamp=self.oper_timestamp,
+                    initiator=self.initiator,
+                    job=job.id if hasattr(self.job, 'id') is True else None)
+                self.oper_id = self.log.table.pointer
+                self.log.sysinfo.prms['oper_id'] = self.oper_id
         pass
 
     def run(self):
         self._prepare()
-        self._extract()
-        self._transform()
-        self._load()
+        self._execute()
         self._finalize()
         pass
 
     def prepare(self):
         pass
 
-    def extract(self):
-        pass
-
-    def transform(self):
-        pass
-
-    def load(self):
+    def execute(self):
         pass
 
     def finalize(self):
         pass
 
     def _prepare(self):
-        """
-        Implement all necessary actions at the start of the ETL process.
-        """
         self.log.bound()
         self.log.info(f'Opening pipeline <{self.name}>...')
+        self.log.info(f'Operation ID <{self.oper_id}>')
+        self.log.info(f'Operation timestamp <{self.oper_timestamp}>')
         try:
             self.prepare()
+            self.start_timestamp = when()
+            self.log.info(f'Started at {self.start_timestamp}')
+            self.log.set(start_timestamp=self.start_timestamp)
         except:
-            self.log.error()
+            self.log.critical()
         else:
-            self.log.info('DONE')
+            self.log.info('Pipeline opened')
         pass
 
-    def _extract(self):
-        self.log.subhead('extraction')
+    def _execute(self):
+        self.log.subhead('execution')
         try:
-            self.extract()
+            self.status = 'P'
+            self.log.set(status=self.status)
+            self.execute()
         except:
-            self.log.error()
+            self.status = 'E'
+            self.log.set(status=self.status)
+            self.log.critical()
         else:
-            self.log.info('DONE')
-        pass
-
-    def _transform(self, *args):
-        self.log.subhead('transformation')
-        try:
-            self.transform()
-        except:
-            self.log.error()
-        else:
-            self.log.info('DONE')
-        pass
-
-    def _load(self):
-        self.log.subhead('loading')
-        try:
-            self.load()
-        except:
-            self.log.error()
-        else:
-            self.log.info('DONE')
+            self.status = 'D'
+            self.log.set(status=self.status)
+            self.log.info('Execution finished')
         pass
 
     def _finalize(self):
@@ -154,8 +144,11 @@ class Setup():
         self.log.info(f'Closing pipeline <{self.name}>...')
         try:
             self.finalize()
+            self.end_timestamp = when()
+            self.log.info(f'Ended at {self.end_timestamp}')
+            self.log.set(end_timestamp=when())
         except:
-            self.log.warning()
+            self.log.critical()
         else:
-            self.log.info('Done!')
+            self.log.info('Pipeline closed')
         pass

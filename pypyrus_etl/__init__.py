@@ -26,3 +26,5 @@ __email__ = 'timurfaradzhov@gmail.com'
 __status__ = 'Production'
 
 __doc__ = 'Python ETL application.'
+
+connections = {}
